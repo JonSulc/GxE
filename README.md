@@ -15,7 +15,7 @@ You can install the latest version of GxE from
 ``` r
 install.packages( "devtools" )
 library( devtools )
-install_github( "zkutalik/GRSxE_software", subdir = "R" )
+install_github( "zkutalik/GRSxE_software", subdir = "Rcode" )
 ```
 
 ## Example
