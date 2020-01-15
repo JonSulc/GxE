@@ -20,3 +20,4 @@ Imports:
     stats
 Suggests:
     PearsonDS
+    gls

@@ -4,7 +4,7 @@
 #'
 #' @param y Outcome phenotype
 #' @param grs Polygenic score
-#' @param sim_num Number of permutations for bootstrap and fake GRSs
+#' @param sim_num Number of permutations for bootstrap, fake GRSs, and fake phenotypes
 #' @param simulate_phenotype Generate pseudo-phenotype fY
 #' @param skewness_range Possible values of skewness to test for in the simulated phenotype
 #' @param kurtosis_range possible values of kurtosis to test for in the simulated phenotype
@@ -21,7 +21,7 @@
 #'   \code{SExopt_fGRS}, and \code{Pxopt_fGRS}, respectively.
 #'
 #'   In addition, the \code{Xopt} and \code{Xopt_fGRS} matrices contain the
-#'   estimates for each bootstrap and fake GRS.
+#'   estimates for each bootstrap and fake GRS, respectively.
 #'
 #'   The \code{tdiff} contains the t-statistic for the difference between the
 #'   real data estimates and those from the fake GRS.
@@ -246,14 +246,14 @@ estimate_gxe  =  function( y,
         results$krA  =  results$skewness^2 + results$kurtosis
     }
 
-    c( results,
-       list( Xopt        =  Xopt,
+    c( list( Xopt        =  Xopt,
              Xopt_fGRS   =  Xopt_fGRS,
              xopt        =  setNames( xopt,        parameter_names ),
              xopt_fGRS   =  setNames( xopt_fGRS,   parameter_names ),
              SExopt      =  setNames( SExopt,      parameter_names ),
              SExopt_fGRS =  setNames( SExopt_fGRS, parameter_names ),
              Pxopt       =  setNames( Pxopt,       parameter_names ),
-             Pxopt_fGRS  =  setNames( Pxopt0,      parameter_names ),
-             tdiff       =  setNames( tdiff,       parameter_names ) ) )
+             Pxopt_fGRS  =  setNames( Pxopt_fGRS,  parameter_names ),
+             tdiff       =  setNames( tdiff,       parameter_names ) ),
+       results )
 }
