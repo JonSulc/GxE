@@ -139,7 +139,8 @@ ukb_estimate_gxe  =  function( phenotype_name,
                                ids_to_remove          = NULL,
                                npcs                   = 10,
                                betas                  = NULL,
-                               sim_num                = 100 ){
+                               sim_num                = 100,
+                               ... ){
     covariate_names  =  unique( c( covariate_names, covariate_factor_names ) )
 
     if (is.null( sample_ids )) {
@@ -203,7 +204,7 @@ ukb_estimate_gxe  =  function( phenotype_name,
 
     grs  =  scale ( t( imputed_data ) %*% as.matrix( snps$beta ) )
 
-    estimate_gxe( phenotype_residuals$phenotype, grs, sim_num )
+    estimate_gxe( phenotype_residuals$phenotype, grs, sim_num, ... )
 }
 
 

@@ -11,8 +11,9 @@
 #' @param max_sd Threshold to remove outliers
 #' @param use_rslurm Use the rslurm package for parallelization
 #' @param rslurm_jobname Name of the rslurm job
-#' @param rslurm_wait Wait for the rslurm job to complete
-#' @param slurm_parameters List of parameters to pass to Slurm
+#' @param rslurm_suffix Append suffix to rslurm_jobname
+#' @param rslurm_overwrite Remove any rslurm files with the same job name in the directory
+#' @param slurm_options List of parameters to pass to Slurm
 #'
 #' @return \code{estimate_gxe} returns a list containing parameter estimates for
 #'   alpha1, alpha2, beta, and gamma (\code{xopt}), their standard error
@@ -107,13 +108,30 @@ estimate_gxe  =  function( y,
                            grs,
                            sim_num = 100,
                            simulate_phenotype = FALSE,
-                           skewness_range = seq( -1.6, 1.6, by = 0.2 ),
-                           kurtosis_range = c( 2:4 ),
+                           skewness_range = seq( 3, 3, by = 0.2 ),
+                           k_range = c( 2:4 ), # kurtosis = skewness^2 + k
                            max_sd = 7,
-                           use_rslurm = TRUE,
+                           use_rslurm = simulate_phenotype
+                             & 'rslurm' %in% rownames(installed.packages()),
+                           rslurm_suffix = FALSE,
+                           rslurm_overwrite = FALSE,
                            rslurm_jobname = 'estimate_gxe',
-                           rslurm_wait = TRUE,
-                           slurm_parameters = list() ){
+                           slurm_options = list() ) { # list( partition = 'sgg' ) ){
+    if (!isFALSE( rslurm_suffix )) {
+        if (isTRUE( rslurm_suffix )) {
+            rslurm_suffix  =  format( Sys.time(), format = "_%Y-%m-%d_%H%M%S" )
+        }
+        rslurm_jobname  =  paste0( rslurm_jobname, rslurm_suffix )
+    }
+    if (use_rslurm
+        & file.exists( sprintf( '_rslurm_%s', rslurm_jobname ) )) {
+        if (rslurm_overwrite) {
+            unlink( sprintf( '_rslurm_%s', rslurm_jobname ), recursive = TRUE )
+        } else {
+            stop( sprintf( 'Folder _rslurm_%s already exists. Use a different rslurm_jobname or rslurm_suffix or set rslurm_overwrite to TRUE.',
+                           rslurm_jobname ) )
+        }
+    }
     if (is.null( dim( y ) )) {
         y = as.matrix( y )
     }
@@ -155,18 +173,12 @@ estimate_gxe  =  function( y,
 
         find_optimal_fY  =  function( skewness,
                                       kurtosis ){
-            fY  =  simulate_fY( y,
-                                grs,
-                                skewness = skewness,
-                                kurtosis = kurtosis,
-                                sim_num = sim_num )
-            if (is.null( fY )) {
-                return( list( thYe     = rep( NA, 3 ),
-                              thYe_SE  = rep( NA, 3 ),
-                              skewness = skewness,
-                              kurtosis = kurtosis,
-                              qual     = NA ) )
-            }
+            fY_full  =  simulate_fY( y,
+                                     grs,
+                                     skewness = skewness,
+                                     kurtosis = kurtosis,
+                                     sim_num = sim_num )
+            fY  =  fY_full$fY
             qual  =  sqrt(mean(
                 (apply( fY, 2,function( fy, y_sorted ) sort(fy) - y_sorted, sort(y) ))^2
             ) )
@@ -178,23 +190,21 @@ estimate_gxe  =  function( y,
                                    IA_fit,
                                    gr = NULL,
                                    y = fY[ , simulation_n ],
-                                   grs = grs ) # ,
-                                   # hessian = TRUE )
+                                   grs = grs )
                 thYs[    , simulation_n ]  =  minimum$par
-                # thYs_SE[ , simulation_n ]  =  sqrt( diag( solve( minimum$hessian ) ) )
             }
 
-            list( # thYs     = thYs,
-                  # thYs_SE  = thYs_SE,
-                  thYe     = apply( thYs, 1, mean, na.rm = TRUE ),
+            list( thYe     = apply( thYs, 1, mean, na.rm = TRUE ),
                   thYe_SE  = apply( thYs, 1, sd,   na.rm = TRUE ) / sqrt( sim_num ),
                   skewness = skewness,
                   kurtosis = kurtosis,
-                  qual     = qual )
+                  qual     = qual,
+                  alp      = fY_full$alp,
+                  f_betas  = fY_full$f_betas )
         }
         parameters  =  expand.grid( skewness = skewness_range,
-                                    kurtosis = kurtosis_range )
-        parameters  =  parameters[ parameters$skewness^2 < parameters$kurtosis - 1, ]
+                                    kurtosis = k_range )
+        parameters$kurtosis = parameters$skewness^2 + parameters$kurtosis
 
         y0  =  scale( y )
         keep  =  abs(y0) < max_sd
@@ -214,6 +224,8 @@ estimate_gxe  =  function( y,
                 stop( "Requires rslurm package." )
             simulate_fY_job  =  slurm_apply( find_optimal_fY,
                                              params = parameters,
+                                             nodes = nrow( parameters ),
+                                             cpus_per_node = 1,
                                              add_objects = c( 'y',
                                                               'grs',
                                                               'simulate_fY',
@@ -222,28 +234,21 @@ estimate_gxe  =  function( y,
                                                               'max_sd',
                                                               'IA_fit',
                                                               '.create_zs' ),
+                                             libPaths = '/home/josulc/miniconda3/lib/R/library',
+                                             slurm_options = slurm_options,
                                              jobname = rslurm_jobname )
-            # if (rslurm_wait) {
-                fY_results  =  get_slurm_out( simulate_fY_job, wait = TRUE )
-#             } else {
-#                 print( sprintf( "Slurm script submitted. Once completed, run:
-# get_fY_results( '%s', nodes = %s ) to see the results.",
-#                             rslurm_jobname,
-#                             simulate_fY_job$nodes ) )
-#             }
+            fY_results  =  get_slurm_out( simulate_fY_job, wait = TRUE )
 
         } else {
             parameters  =  as.data.frame( t( parameters ) )
             fY_results  =  mclapply( parameters, function( param ){
                 find_optimal_fY( param[1], param[2] )
             } )
-            # get_fY_results( fY_results = fY_results )
         }
         score  =  sapply( fY_results, function( fY_result ){
             sum(abs(fY_result$thYe - thY) / thY_SE)
         } )
         results  =  fY_results[[ which.min( score ) ]]
-        results$krA  =  results$skewness^2 + results$kurtosis
     }
 
     c( list( Xopt        =  Xopt,

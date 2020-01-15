@@ -22,9 +22,7 @@ source( 'R/IA_fit.R'  )
 
 .create_zs  =  function( ys,
                          y_sorted,
-                         skewness,
-                         kurtosis ){
-  y_order  =  order( ys )
+                         ys_order = order( ys ) ){
   Ys  =  outer( ys,  1:7, function( y, power ) y^power )
   betas  =  lm( y_sorted ~ Ys[ y_order, ] )$coefficients
 
@@ -32,11 +30,22 @@ source( 'R/IA_fit.R'  )
   scale( rowSums( zs ) + betas[1] )
 }
 
+.get_betas  =  function( Ys,
+                         y_sorted,
+                         ys_order = order( Ys[ , 1 ] ) ){
+  # y_order  =  order( ys )
+  # Ys  =  outer( ys, power_range, function( y, power ) y^power )
+  lm( y_sorted ~ Ys[ ys_order, ] )$coefficients
+}
+
 simulate_fY  =  function( y,
                           grs,
                           skewness,
                           kurtosis,
                           sim_num = 100 ){
+  if (skewness^2 > kurtosis-1) {
+    stop( "Invalid combination of skewness and kurtosis" )
+  }
   y    =  scale( y )
   grs  =  scale( grs )
 
@@ -48,28 +57,20 @@ simulate_fY  =  function( y,
   }
   z    =  matrix( rankNorm( y[ , 1 ] ), ncol = 1 )
 
-  ####### Check for a1 = corrz( y0, GRS )
-  # a1   =  summary( lm( y0~grs ) )$coef[ 'grs', 'Estimate' ]
   a1  =  cor( y, grs )[1]
 
   thY =  optim( c( a1, 0.1, 0 ), IA_fit, gr = NULL, y = y, grs = grs )$par
-  # thZ =  optim( thY,             IA_fit, gr = NULL, y = z, grs = grs )$par
 
   y_sorted  =  sort( y )
 
   a1s  =  matrix( a1 + seq( -0.25, 0.25, by = 0.01 ), nrow = 1 )
-  try({
-    noi  =  matrix( rpearson( length( y ),
-                              moments = c( 0, 1, skewness, kurtosis ) ),
-                    ncol = 1 )
-  }, silent = TRUE )
-  if (!exists( 'noi' )) {
-    return()
-  }
+  noi  =  matrix( rpearson( length( y ),
+                            moments = c( 0, 1, skewness, kurtosis ) ),
+                  ncol = 1 )
 
   yS   =  grs %*% a1s + noi %*% sqrt( 1-a1s^2 )
 
-  zS   =  apply( yS, 2, .create_zs, y_sorted, skewness, kurtosis )
+  zS   =  apply( yS, 2, .create_zs, y_sorted )
 
   ts  =  apply( zS, 2, function( z, grs ) lm( grs ~ z-1 )$coefficients, grs )
 
@@ -79,42 +80,15 @@ simulate_fY  =  function( y,
                             moments = c( 0, 1, skewness, kurtosis ) ),
                   ncol = sim_num )
 
-  yS  =  a1_best * grs %*% matrix( 1, ncol = sim_num ) + noi * sqrt( 1-a1_best^2 )
-  # zS  =  apply( yS, 2, .create_zs, y_sorted, skewness, kurtosis )
+  yS  =  a1_best * matrix( grs, nrow = length(grs), ncol = sim_num ) +
+         noi * sqrt( 1-a1_best^2 )
+  mean_ys  =  apply( apply( yS, 2, sort ), 1, mean )
+  mean_Ys  =  outer( mean_ys,  1:7, function( y, power ) y^power )
+  betas  =  lm( y_sorted ~ mean_Ys )$coefficients
 
-  return( apply( yS, 2, .create_zs, y_sorted, skewness, kurtosis ) )
-
-  # qual  =  sqrt(mean( (apply( zS, 2, function( z, y_sorted ) sort(z) - y_sorted, y_sorted ))^2 ))
-  #
-  # thYs = thYs_SE = thZs = thZs_SE  =  matrix( 0, nrow = 3, ncol = sim_num )
-  #
-  # for (simulation_n in 1:sim_num) {
-  #   minimum  =  optim( c( a1, 0.1, 0 ),
-  #                      IA_fit,
-  #                      gr = NULL,
-  #                      # list( y = zS[ , simulation_n ], g = grs ),
-  #                      y = zS[ , simulation_n ],
-  #                      grs = grs,
-  #                      hessian = TRUE )
-  #   thYs[ , simulation_n ]  =  minimum$par
-  #   thYs_SE[ , simulation_n ]  =  sqrt( diag( solve( minimum$hessian ) ) )
-  #
-  #   # tt  =  rankNorm( zS[ , simulation_n ] )
-  #   # minimum  =  optim( c( a1, 0.1, 0 ),
-  #   #                    IA_fit,
-  #   #                    gr = NULL,
-  #   #                    y = tt,
-  #   #                    grs = grs,
-  #   #                    hessian = TRUE )
-  #   # thZs[ , simulation_n ]  =  minimum$par
-  #   # thZs_SE[ , simulation_n ]  =  sqrt( diag( solve( minimum$hessian ) ) )
-  # }
-  #
-  # list( thYs    = thYs,
-  #       thYs_SE = thYs_SE,
-  #       # thZs    = thZs,
-  #       # thZs_SE = thZs_SE,
-  #       qual    = qual )
+  return( list( fY = apply( yS, 2, .create_zs, y_sorted ),
+                alp = a1_best,
+                f_betas = betas) )
 }
 
 
