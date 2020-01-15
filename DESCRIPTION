@@ -19,5 +19,5 @@ Imports:
     rbgen,
     stats
 Suggests:
-    PearsonDS
+    PearsonDS,
     gls
