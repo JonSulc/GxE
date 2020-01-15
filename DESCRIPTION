@@ -20,4 +20,5 @@ Imports:
     stats
 Suggests:
     PearsonDS,
-    gls
+    gls,
+    RNOmni

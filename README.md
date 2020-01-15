@@ -22,17 +22,17 @@ install_github( "zkutalik/GRSxE_software", subdir = "Rcode" )
 
 The main function is `estimate_gxe`, which requires the outcome
 phenotype of interest `y` (corrected for any relevant covariates) and
-the polygenic score, `GRS`. This returns a list of results.
+the polygenic score, `grs`. This returns a list of results.
 
-`xopt` and `xopt0` are vectors, each containing 4 parameters, namely
+`xopt` and `xopt_fGRS` are vectors, each containing 4 parameters, namely
 `alpha1` (linear genetic effect), `alpha2` (quadratic genetic effect),
 `beta` (environmental effect), and `gamma` (GxE interaction effect).
 While the `xopt` vector contains these parameters estimated in the real
-data, `xopt0` contains parameters estimated using a counterfeit GRS.
+data, `xopt_fGRS` contains parameters estimated using a counterfeit GRS.
 
-`SExopt`, `SExopt0`, `Pxopt`, and `Pxopt0` are similarly structured but
-contain the respective standard errors and p-values obtained from
-bootstrapping.
+`SExopt`, `SExopt_fGRS`, `Pxopt`, and `Pxopt_fGRS` are similarly
+structured but contain the respective standard errors and p-values
+obtained from bootstrapping.
 
 `tdiff` contains the t-statistic for the difference between the results
 from the real and the counterfeit GRS.
@@ -40,7 +40,7 @@ from the real and the counterfeit GRS.
 ``` r
 library(GxE)
 
-gxe  =  estimate_gxe( y, GRS )
+gxe  =  estimate_gxe( y, grs )
 print( gxe )
 ```
 

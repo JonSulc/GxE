@@ -239,8 +239,8 @@ estimate_gxe  =  function( y,
             } )
             # get_fY_results( fY_results = fY_results )
         }
-        score  =  sapply( fY_results, function( results ){
-            sum(abs(results$thYe - thY) / thY_SE)
+        score  =  sapply( fY_results, function( fY_result ){
+            sum(abs(fY_result$thYe - thY) / thY_SE)
         } )
         results  =  fY_results[[ which.min( score ) ]]
         results$krA  =  results$skewness^2 + results$kurtosis
