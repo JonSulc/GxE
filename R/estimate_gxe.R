@@ -5,6 +5,14 @@
 #' @param y Outcome phenotype
 #' @param grs Polygenic score
 #' @param sim_num Number of permutations for bootstrap and fake GRSs
+#' @param simulate_phenotype Generate pseudo-phenotype fY
+#' @param skewness_range Possible values of skewness to test for in the simulated phenotype
+#' @param kurtosis_range possible values of kurtosis to test for in the simulated phenotype
+#' @param max_sd Threshold to remove outliers
+#' @param use_rslurm Use the rslurm package for parallelization
+#' @param rslurm_jobname Name of the rslurm job
+#' @param rslurm_wait Wait for the rslurm job to complete
+#' @param slurm_parameters List of parameters to pass to Slurm
 #'
 #' @return \code{estimate_gxe} returns a list containing parameter estimates for
 #'   alpha1, alpha2, beta, and gamma (\code{xopt}), their standard error
@@ -98,9 +106,9 @@ source( 'R/simulate_fY.R' )
 estimate_gxe  =  function( y,
                            grs,
                            sim_num = 100,
-                           skewness_range = seq( -3, 3, by = 0.2 ),
-                           kurtosis_range = c( 2:4 ),
                            simulate_phenotype = FALSE,
+                           skewness_range = seq( -1.6, 1.6, by = 0.2 ),
+                           kurtosis_range = c( 2:4 ),
                            max_sd = 7,
                            use_rslurm = TRUE,
                            rslurm_jobname = 'estimate_gxe',
