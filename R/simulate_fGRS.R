@@ -1,6 +1,6 @@
-simulate_fGRS = function( y, GRS, sim_num ){
-    b1   =  mean( y * GRS )
-    b2   =  mean( y * (GRS^2) )
+simulate_fGRS = function( y, grs, sim_num ){
+    b1   =  mean( y * grs )
+    b2   =  mean( y * (grs^2) )
     mu2  =  mean( y^2 )
     mu3  =  mean( y^3 )
     mu4  =  mean( y^4 )
@@ -22,10 +22,9 @@ simulate_fGRS = function( y, GRS, sim_num ){
         varG0  =  a0^2 + a1^2 + a2^2 * mu4 + 2 * a0 * a2 + 2 * a1 * a2 * mu3
 
         G0  =  a0 + a1 * y + a2 * y^2
-        fGRS  =  G0 %*% matrix( 1, ncol = sim_num ) +
-                 sqrt( 1-varG0 ) * noi
+        return( G0 %*% matrix( 1, ncol = sim_num ) + sqrt( 1-varG0 ) * noi )
     } else {
-        fGRS  =  b1 * y * matrix( 1, ncol = sim_num ) + sqrt( 1-b1^2 ) * noi
+        return( b1 * y * matrix( 1, ncol = sim_num ) + sqrt( 1-b1^2 ) * noi )
     }
 
 }

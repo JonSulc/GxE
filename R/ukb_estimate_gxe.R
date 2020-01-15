@@ -132,14 +132,14 @@ ukb_estimate_gxe  =  function( phenotype_name,
                                correct_age2_sex       = TRUE,
                                sample_ids             = NULL,
                                sqc_filename           = NULL,
-                               fam_filename          = NULL,
+                               fam_filename           = NULL,
                                imp_sample_filename    = list.files( bgens_path,
                                                                     pattern = '[.]sample$',
                                                                     full.names = TRUE )[1],
                                ids_to_remove          = NULL,
                                npcs                   = 10,
                                betas                  = NULL,
-                               sim_num                = 1e2 ){
+                               sim_num                = 100 ){
     covariate_names  =  unique( c( covariate_names, covariate_factor_names ) )
 
     if (is.null( sample_ids )) {
@@ -152,10 +152,10 @@ ukb_estimate_gxe  =  function( phenotype_name,
 
     ukb_data  =  do.call( cbind,
                           lapply( ukb_filename,
-                                  function(x) fread( ukb_filename,
-                                                     select = c( 'eid',
-                                                                 phenotype_name,
-                                                                 covariate_names ) ) ) )
+                                  function(filename) fread( filename,
+                                                            select = c( 'eid',
+                                                                        phenotype_name,
+                                                                        covariate_names ) ) ) )
     ukb_data  =  ukb_data[ , c( 'eid', phenotype_name, covariate_names ), with = FALSE ]
 
     colnames( ukb_data )[2]  =  'phenotype'
