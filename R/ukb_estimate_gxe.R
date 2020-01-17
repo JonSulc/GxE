@@ -92,7 +92,7 @@ library( dplyr )
                            fam_filename,
                            ids_to_remove = c(),
                            npcs = 10 ){
-    sqc_columns  =  colnames( fread( sqc_filename, nrows = 0 ) )
+    sqc_columns  =  colnames( fread( sqc_filename, nrows = 1 ) )
     if( length( sqc_columns ) == 68 ) {
         sqc_data  =  fread( sqc_filename,
                             select = c( 4,
