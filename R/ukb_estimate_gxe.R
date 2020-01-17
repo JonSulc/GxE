@@ -95,13 +95,13 @@ library( dplyr )
     sqc_columns  =  colnames( fread( sqc_filename, nrows = 1 ) )
     if( length( sqc_columns ) == 68 ) {
         sqc_data  =  fread( sqc_filename,
-                            select = c( 4,
-                                        # 24, # Batch
+                            select = c( 4, # Batch
+                                        24,
                                         25:(25 + npcs) ))
     } else {
         sqc_data  =  fread( sqc_filename,
-                            select = c( 2,
-                                        # 22, # Batch
+                            select = c( 2, # Batch
+                                        22,
                                         23:(23 + npcs) ))
     }
 
@@ -109,7 +109,7 @@ library( dplyr )
                                    select = c( 1 ) ),
                             sqc_data )
     colnames( sqc_data )  =  c( 'eid',
-                                # 'batch',
+                                'batch',
                                 'white',
                                 'unrelated',
                                 paste0( 'pc', 1:npcs ) )
@@ -119,7 +119,7 @@ library( dplyr )
                                sqc_data$unrelated == 1, ]
     sqc_data  =  sqc_data[ , -c(3:4) ]
 
-    # sqc_data$batch = as.factor(sqc_data$batch)
+    sqc_data$batch = as.factor(sqc_data$batch)
     sqc_data
 }
 

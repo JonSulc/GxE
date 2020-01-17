@@ -117,21 +117,21 @@ estimate_gxe  =  function( y,
                            rslurm_overwrite = FALSE,
                            rslurm_jobname = 'estimate_gxe',
                            slurm_options = list() ) { # list( partition = 'sgg' ) ){
-    if (!isFALSE( rslurm_suffix )) {
-        if (isTRUE( rslurm_suffix )) {
-            rslurm_suffix  =  format( Sys.time(), format = "_%Y-%m-%d_%H%M%S" )
-        }
-        rslurm_jobname  =  paste0( rslurm_jobname, rslurm_suffix )
-    }
-    if (use_rslurm
-        & file.exists( sprintf( '_rslurm_%s', rslurm_jobname ) )) {
-        if (rslurm_overwrite) {
-            unlink( sprintf( '_rslurm_%s', rslurm_jobname ), recursive = TRUE )
-        } else {
-            stop( sprintf( 'Folder _rslurm_%s already exists. Use a different rslurm_jobname or rslurm_suffix or set rslurm_overwrite to TRUE.',
-                           rslurm_jobname ) )
-        }
-    }
+    # if (!isFALSE( rslurm_suffix )) {
+    #     if (isTRUE( rslurm_suffix )) {
+    #         rslurm_suffix  =  format( Sys.time(), format = "_%Y-%m-%d_%H%M%S" )
+    #     }
+    #     rslurm_jobname  =  paste0( rslurm_jobname, rslurm_suffix )
+    # }
+    # if (use_rslurm
+    #     & file.exists( sprintf( '_rslurm_%s', rslurm_jobname ) )) {
+    #     if (rslurm_overwrite) {
+    #         unlink( sprintf( '_rslurm_%s', rslurm_jobname ), recursive = TRUE )
+    #     } else {
+    #         stop( sprintf( 'Folder _rslurm_%s already exists. Use a different rslurm_jobname or rslurm_suffix or set rslurm_overwrite to TRUE.',
+    #                        rslurm_jobname ) )
+    #     }
+    # }
     if (is.null( dim( y ) )) {
         y = as.matrix( y )
     }

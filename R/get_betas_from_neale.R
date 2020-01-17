@@ -39,14 +39,15 @@ get_betas_from_neale  =  function( neale_filename,
                                    threshold      = 5e-8,
                                    prune_distance = 5e5 ) {
 
-    neale_stats  =  fread( paste( 'zcat', neale_filename ),
+    neale_stats  =  fread( cmd = paste( 'zcat', neale_filename ),
                            select = c( 'variant', 'low_confidence_variant', 'beta', 'pval' ) )
     neale_stats  =  filter( neale_stats,
-                            low_confidence_variant == 'false',
+                            # low_confidence_variant == 'false',
+                            (!low_confidence_variant | low_confidence_variant == 'false'),
                             pval < threshold )
     neale_stats  =  select( neale_stats, -low_confidence_variant )
     neale_stats  =  left_join( neale_stats,
-                               fread( paste( 'zcat', variants_filename ),
+                               fread( cmd = paste( 'zcat', variants_filename ),
                                       select = c( 'variant', 'rsid', 'chr', 'pos' ) ) )
     neale_stats  =  do.call( rbind,
                              mclapply( 1:22,
