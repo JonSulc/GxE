@@ -2,7 +2,7 @@
 #'
 #' @name estimate_gxe
 #'
-#' @param y Outcome phenotype
+#' @param phenotypes Outcome phenotype
 #' @param grs Polygenic score
 #' @param sim_num Number of permutations for bootstrap, fake GRSs, and fake phenotypes
 #' @param simulate_phenotype Generate pseudo-phenotype fY
@@ -104,10 +104,11 @@ source( 'R/simulate_fY.R' )
            y = y, grs = grs )$par
 }
 
-estimate_gxe  =  function( y,
+estimate_gxe  =  function( phenotypes,
                            grs,
                            sim_num = 100,
                            simulate_phenotype = FALSE,
+                           # The rest is only used if simulate_phenotype is TRUE
                            skewness_range = seq( 3, 3, by = 0.2 ),
                            k_range = c( 2:4 ), # kurtosis = skewness^2 + k
                            max_sd = 7,
@@ -116,100 +117,94 @@ estimate_gxe  =  function( y,
                            rslurm_suffix = FALSE,
                            rslurm_overwrite = FALSE,
                            rslurm_jobname = 'estimate_gxe',
-                           slurm_options = list() ) { # list( partition = 'sgg' ) ){
-    # if (!isFALSE( rslurm_suffix )) {
-    #     if (isTRUE( rslurm_suffix )) {
-    #         rslurm_suffix  =  format( Sys.time(), format = "_%Y-%m-%d_%H%M%S" )
-    #     }
-    #     rslurm_jobname  =  paste0( rslurm_jobname, rslurm_suffix )
-    # }
-    # if (use_rslurm
-    #     & file.exists( sprintf( '_rslurm_%s', rslurm_jobname ) )) {
-    #     if (rslurm_overwrite) {
-    #         unlink( sprintf( '_rslurm_%s', rslurm_jobname ), recursive = TRUE )
-    #     } else {
-    #         stop( sprintf( 'Folder _rslurm_%s already exists. Use a different rslurm_jobname or rslurm_suffix or set rslurm_overwrite to TRUE.',
-    #                        rslurm_jobname ) )
-    #     }
-    # }
-    if (is.null( dim( y ) )) {
-        y = as.matrix( y )
+                           slurm_options = list() ) {
+    if (is.null( dim( phenotypes ) )) {
+        phenotypes = as.matrix( phenotypes )
     }
 
-    ao_het  =  lm( y ~ grs + I( grs^2 ) )$coefficients[ 2 ]
-    Xopt  =  mclapply( 1:sim_num,
+    ao_het  =  lm( phenotypes ~ grs + I( grs^2 ) )$coefficients[ 2 ]
+    individual_coefficients  =  mclapply( 1:sim_num,
                        function(x) {
-                           ix  =  sample( length(y), length(y), replace = TRUE )
-                           .single_gxe( y[   ix, , drop = FALSE ],
+                           ix  =  sample( length(phenotypes),
+                                          length(phenotypes),
+                                          replace = TRUE )
+                           .single_gxe( phenotypes[   ix, , drop = FALSE ],
                                         grs[ ix, , drop = FALSE ],
                                         c( ao_het, 0.1, 0 ) )
                        } )
 
-    fGRS        =  simulate_fGRS( y, grs, sim_num )
-    Xopt_fGRS  =  mclapply( as.data.frame( fGRS ),
+    fGRS        =  simulate_fGRS( phenotypes, grs, sim_num )
+    individual_coefficients_fgrs  =  mclapply( as.data.frame( fGRS ),
                             function(fgrs) {
-                                .single_gxe( y,
+                                .single_gxe( phenotypes,
                                              as.matrix( fgrs ),
                                              c( ao_het, 0.1, 0 ) )
                             } )
 
-    parameter_names = c( 'alpha1', 'alpha2', 'beta', 'gamma' )
+    coef_names = c( 'alpha1', 'alpha2', 'beta', 'gamma' )
 
-    Xopt        =  do.call( cbind, Xopt  )
-    Xopt_fGRS   =  do.call( cbind, Xopt_fGRS )
-    rownames( Xopt      )  =  parameter_names
-    rownames( Xopt_fGRS )  =  parameter_names
-    xopt        =  apply( Xopt,  1, mean )
-    xopt_fGRS   =  apply( Xopt_fGRS, 1, mean )
-    SExopt      =  apply( Xopt,  1, sd   )
-    SExopt_fGRS =  apply( Xopt_fGRS, 1, sd   )
-    Pxopt       =  2 * pnorm( -abs( xopt  / SExopt  ) )
-    Pxopt_fGRS  =  2 * pnorm( -abs( xopt_fGRS / SExopt_fGRS ) )
-    tdiff       =  ( xopt - xopt_fGRS ) / sqrt( SExopt^2 + SExopt_fGRS^2 )
+    individual_coefficients      =  do.call( cbind, individual_coefficients  )
+    individual_coefficients_fgrs =  do.call( cbind, individual_coefficients_fgrs )
+    rownames( individual_coefficients      )  =  coef_names
+    rownames( individual_coefficients_fgrs )  =  coef_names
+    coefficients         =  apply( individual_coefficients,      1, mean )
+    coefficients_fgrs    =  apply( individual_coefficients_fgrs, 1, mean )
+    se_coefficients      =  apply( individual_coefficients,      1, sd   )
+    se_coefficients_fgrs =  apply( individual_coefficients_fgrs, 1, sd   )
+    p_coefficients       =  2 * pnorm( -abs( coefficients      / se_coefficients      ) )
+    p_coefficients_fgrs  =  2 * pnorm( -abs( coefficients_fgrs / se_coefficients_fgrs ) )
+    t_real_fgrs          =  ( coefficients - coefficients_fgrs ) / sqrt( se_coefficients^2 + se_coefficients_fgrs^2 )
     results  =  list()
 
     if (simulate_phenotype) {
-        cor_y_grs  =  cor( y, grs )[1]
+        cor_y_grs  =  cor( phenotypes, grs )[1]
 
         find_optimal_fY  =  function( skewness,
                                       kurtosis ){
-            fY_full  =  simulate_fY( y,
+            fY_full  =  simulate_fY( phenotypes,
                                      grs,
                                      skewness = skewness,
                                      kurtosis = kurtosis,
                                      sim_num = sim_num )
-            fY  =  fY_full$fY
+            fphenotype  =  fY_full$fphenotype
             qual  =  sqrt(mean(
-                (apply( fY, 2,function( fy, y_sorted ) sort(fy) - y_sorted, sort(y) ))^2
+                (apply( fphenotype, 2,function( fy, y_sorted ) sort(fy) - y_sorted, sort(phenotypes) ))^2
             ) )
 
-            thYs = thYs_SE = thZs = thZs_SE  =  matrix( 0, nrow = 3, ncol = sim_num )
+            # thYs = matrix( 0, nrow = 3, ncol = sim_num )
 
-            for (simulation_n in 1:sim_num) {
-                minimum  =  optim( c( cor_y_grs, 0.1, 0 ),
-                                   IA_fit,
-                                   gr = NULL,
-                                   y = fY[ , simulation_n ],
-                                   grs = grs )
-                thYs[    , simulation_n ]  =  minimum$par
-            }
+            # for (simulation_n in 1:sim_num) {
+            #     minimum  =  optim( c( cor_y_grs, 0.1, 0 ),
+            #                        IA_fit,
+            #                        gr = NULL,
+            #                        y = fphenotype[ , simulation_n ],
+            #                        grs = grs )
+            #     thYs[    , simulation_n ]  =  minimum$par
+            # }
+            thYs  =  apply( fphenotype, 2, function( y ){
+                optim( c( cor_y_grs, 0.1, 0 ),
+                       IA_fit,
+                       gr = NULL,
+                       y = y,
+                       grs = grs )
+            } )
 
-            list( thYe     = apply( thYs, 1, mean, na.rm = TRUE ),
-                  thYe_SE  = apply( thYs, 1, sd,   na.rm = TRUE ) / sqrt( sim_num ),
-                  skewness = skewness,
-                  kurtosis = kurtosis,
-                  qual     = qual,
-                  alp      = fY_full$alp,
-                  f_betas  = fY_full$f_betas )
+            list( coefficients = apply( thYs, 1, mean, na.rm = TRUE ),
+                  se           = apply( thYs, 1, sd,   na.rm = TRUE ) / sqrt( sim_num ),
+                  skewness     = skewness,
+                  kurtosis     = kurtosis,
+                  rms_diff     = qual,
+                  alp          = fY_full$alp,
+                  fY_coefficients = fY_full$f_betas )
         }
         parameters  =  expand.grid( skewness = skewness_range,
                                     kurtosis = k_range )
         parameters$kurtosis = parameters$skewness^2 + parameters$kurtosis
 
-        y0  =  scale( y )
-        keep  =  abs(y0) < max_sd
-        y0  =  y0[ keep, , drop = FALSE ]
-        grs0  =  scale( grs[ keep, , drop = FALSE ] )
+        y0   =  scale( phenotypes )
+        keep =  abs(y0) < max_sd
+        y0   =  y0[ keep, , drop = FALSE ]
+        grs0 =  scale( grs[ keep, , drop = FALSE ] )
 
         minimum  =  optim( c( cor_y_grs, 0.1, 0 ),
                            IA_fit,
@@ -246,19 +241,25 @@ estimate_gxe  =  function( y,
             } )
         }
         score  =  sapply( fY_results, function( fY_result ){
-            sum(abs(fY_result$thYe - thY) / thY_SE)
+            sum(abs(fY_result$coefficients - thY) / thY_SE)
         } )
         results  =  fY_results[[ which.min( score ) ]]
     }
 
-    c( list( Xopt        =  Xopt,
-             Xopt_fGRS   =  Xopt_fGRS,
-             xopt        =  setNames( xopt,        parameter_names ),
-             xopt_fGRS   =  setNames( xopt_fGRS,   parameter_names ),
-             SExopt      =  setNames( SExopt,      parameter_names ),
-             SExopt_fGRS =  setNames( SExopt_fGRS, parameter_names ),
-             Pxopt       =  setNames( Pxopt,       parameter_names ),
-             Pxopt_fGRS  =  setNames( Pxopt_fGRS,  parameter_names ),
-             tdiff       =  setNames( tdiff,       parameter_names ) ),
-       results )
+    c( list(
+        real_phenotype = list(
+            coefficients = setNames( coefficients, coef_names ),
+            se = setNames( se_coefficients, coef_names ),
+            p  = setNames( p_coefficients,  coef_names ),
+            individual_estimates = individual_coefficients
+        ),
+        fake_grs = list(
+            coefficients = setNames( coefficients_fgrs, coef_names ),
+            se = setNames( se_coefficients_fgrs, coef_names ),
+            p  = setNames( p_coefficients_fgrs,  coef_names ),
+            individual_estimates = individual_coefficients_fgrs
+        ),
+        fake_phenotype = results,
+        t_real_fgrs = setNames( t_real_fgrs,       coef_names )
+    ) )
 }

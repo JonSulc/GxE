@@ -1,7 +1,6 @@
 # library( R.matlab )
 library( RNOmni ) # IRNT
 library( PearsonDS ) # Random number generator for Pearson distribution
-# library( numDeriv ) # Hessian
 
 source( 'R/IA_fit.R'  )
 
@@ -30,15 +29,7 @@ source( 'R/IA_fit.R'  )
   scale( rowSums( zs ) + betas[1] )
 }
 
-.get_betas  =  function( Ys,
-                         y_sorted,
-                         ys_order = order( Ys[ , 1 ] ) ){
-  # y_order  =  order( ys )
-  # Ys  =  outer( ys, power_range, function( y, power ) y^power )
-  lm( y_sorted ~ Ys[ ys_order, ] )$coefficients
-}
-
-simulate_fY  =  function( y,
+simulate_fY  =  function( phenotypes,
                           grs,
                           skewness,
                           kurtosis,
@@ -46,25 +37,25 @@ simulate_fY  =  function( y,
   if (skewness^2 > kurtosis-1) {
     stop( "Invalid combination of skewness and kurtosis" )
   }
-  y    =  scale( y )
-  grs  =  scale( grs )
+  phenotypes  =  scale( phenotypes )
+  grs         =  scale( grs )
 
-  if (is.null( dim( y ) )) {
-    y  =  array( y, dim = c( length( y ), 1 ) )
+  if (is.null( dim( phenotypes ) )) {
+    phenotypes  =  array( phenotypes, dim = c( length( phenotypes ), 1 ) )
   }
   if (is.null( dim( grs ) )) {
     grs  =  array( grs, dim = c( length( grs ), 1 ) )
   }
-  z    =  matrix( rankNorm( y[ , 1 ] ), ncol = 1 )
+  z    =  matrix( rankNorm( phenotypes[ , 1 ] ), ncol = 1 )
 
-  a1  =  cor( y, grs )[1]
+  a1  =  cor( phenotypes, grs )[1]
 
-  thY =  optim( c( a1, 0.1, 0 ), IA_fit, gr = NULL, y = y, grs = grs )$par
+  thY =  optim( c( a1, 0.1, 0 ), IA_fit, gr = NULL, y = phenotypes, grs = grs )$par
 
-  y_sorted  =  sort( y )
+  y_sorted  =  sort( phenotypes )
 
   a1s  =  matrix( a1 + seq( -0.25, 0.25, by = 0.01 ), nrow = 1 )
-  noi  =  matrix( rpearson( length( y ),
+  noi  =  matrix( rpearson( length( phenotypes ),
                             moments = c( 0, 1, skewness, kurtosis ) ),
                   ncol = 1 )
 
@@ -76,17 +67,17 @@ simulate_fY  =  function( y,
 
   a1_best  =  a1s[ which.min( abs( ts-a1 ) ) ]
 
-  noi  =  matrix( rpearson( length( y ) * sim_num,
+  noi  =  matrix( rpearson( length( phenotypes ) * sim_num,
                             moments = c( 0, 1, skewness, kurtosis ) ),
                   ncol = sim_num )
 
   yS  =  a1_best * matrix( grs, nrow = length(grs), ncol = sim_num ) +
          noi * sqrt( 1-a1_best^2 )
   mean_ys  =  apply( apply( yS, 2, sort ), 1, mean )
-  mean_Ys  =  outer( mean_ys,  1:7, function( y, power ) y^power )
+  mean_Ys  =  outer( mean_ys,  1:7, function( phenotypes, power ) phenotypes^power )
   betas  =  lm( y_sorted ~ mean_Ys )$coefficients
 
-  return( list( fY = apply( yS, 2, .create_zs, y_sorted ),
+  return( list( fphenotypes = apply( yS, 2, .create_zs, y_sorted ),
                 alp = a1_best,
                 f_betas = betas) )
 }
