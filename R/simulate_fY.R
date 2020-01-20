@@ -23,7 +23,7 @@ source( 'R/IA_fit.R'  )
                          y_sorted,
                          ys_order = order( ys ) ){
   Ys  =  outer( ys,  1:7, function( y, power ) y^power )
-  betas  =  lm( y_sorted ~ Ys[ y_order, ] )$coefficients
+  betas  =  lm( y_sorted ~ Ys[ ys_order, ] )$coefficients
 
   zs  =  sweep( Ys, 2, betas[-1], '*' )
   scale( rowSums( zs ) + betas[1] )

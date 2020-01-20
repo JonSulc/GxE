@@ -114,8 +114,6 @@ estimate_gxe  =  function( phenotypes,
                            max_sd = 7,
                            use_rslurm = simulate_phenotype
                              & 'rslurm' %in% rownames(installed.packages()),
-                           rslurm_suffix = FALSE,
-                           rslurm_overwrite = FALSE,
                            rslurm_jobname = 'estimate_gxe',
                            slurm_options = list() ) {
     if (is.null( dim( phenotypes ) )) {
