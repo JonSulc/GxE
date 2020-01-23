@@ -88,7 +88,6 @@
 
 library( parallel )
 
-# source( 'R/regress.R' )
 source( 'R/IA_fit.R' )
 source( 'R/IA_fit_G2.R' )
 source( 'R/simulate_fY.R' )
@@ -109,7 +108,7 @@ estimate_gxe  =  function( phenotypes,
                            sim_num = 100,
                            simulate_phenotype = FALSE,
                            # The rest is only used if simulate_phenotype is TRUE
-                           skewness_range = seq( 3, 3, by = 0.2 ),
+                           skewness_range = seq( -3, 3, by = 0.2 ),
                            k_range = c( 2:4 ), # kurtosis = skewness^2 + k
                            max_sd = 7,
                            use_rslurm = simulate_phenotype
@@ -184,10 +183,10 @@ estimate_gxe  =  function( phenotypes,
                        IA_fit,
                        gr = NULL,
                        y = y,
-                       grs = grs )
+                       grs = grs )$par
             } )
 
-            list( coefficients = apply( thYs, 1, mean, na.rm = TRUE ),
+            list( coefficients = rowMeans( thYs, na.rm = TRUE ),
                   se           = apply( thYs, 1, sd,   na.rm = TRUE ) / sqrt( sim_num ),
                   skewness     = skewness,
                   kurtosis     = kurtosis,

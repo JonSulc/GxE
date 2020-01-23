@@ -1,23 +1,7 @@
-# library( R.matlab )
 library( RNOmni ) # IRNT
 library( PearsonDS ) # Random number generator for Pearson distribution
 
 source( 'R/IA_fit.R'  )
-
-# data_dir  =  '/data/sgg2/zoltan/project/Project_tailPDF'
-# phenotype  =  '21001'
-#
-# tmp  =  readMat( sprintf( '%s/data-mat/ukbb/data_ukbb%s_v2.mat',
-#                           data_dir,
-#                           phenotype ) )
-# y   =  tmp$y0
-# grs  =  tmp$GRS
-# rm( tmp )
-#
-# sel  =  abs(y0) < 7
-# y0   =  scale( y0[ sel ] )
-# grs  =  scale( grs[ sel ] )
-# z0   =  matrix( rankNorm( y0[ , 1 ] ), ncol = 1 )
 
 .create_zs  =  function( ys,
                          y_sorted,
