@@ -211,32 +211,32 @@ estimate_gxe  =  function( phenotypes,
         thY     =  minimum$par
         thY_SE  =  sqrt( diag( solve( minimum$hessian ) ) )
 
-        if (use_rslurm) {
-            if(!require(rslurm))
-                stop( "Requires rslurm package." )
-            simulate_fY_job  =  slurm_apply( find_optimal_fY,
-                                             params = parameters,
-                                             nodes = nrow( parameters ),
-                                             cpus_per_node = 1,
-                                             add_objects = c( 'y',
-                                                              'grs',
-                                                              'simulate_fY',
-                                                              'cor_y_grs',
-                                                              'sim_num',
-                                                              'max_sd',
-                                                              'IA_fit',
-                                                              '.create_zs' ),
-                                             libPaths = '/home/josulc/miniconda3/lib/R/library',
-                                             slurm_options = slurm_options,
-                                             jobname = rslurm_jobname )
-            fY_results  =  get_slurm_out( simulate_fY_job, wait = TRUE )
-
-        } else {
-            parameters  =  as.data.frame( t( parameters ) )
-            fY_results  =  mclapply( parameters, function( param ){
-                find_optimal_fY( param[1], param[2] )
-            } )
-        }
+        # if (use_rslurm) {
+        #     if(!require(rslurm))
+        #         stop( "Requires rslurm package." )
+        #     simulate_fY_job  =  slurm_apply( find_optimal_fY,
+        #                                      params = parameters,
+        #                                      nodes = nrow( parameters ),
+        #                                      cpus_per_node = 1,
+        #                                      add_objects = c( 'y',
+        #                                                       'grs',
+        #                                                       'simulate_fY',
+        #                                                       'cor_y_grs',
+        #                                                       'sim_num',
+        #                                                       'max_sd',
+        #                                                       'IA_fit',
+        #                                                       '.create_zs' ),
+        #                                      libPaths = '/home/josulc/miniconda3/lib/R/library',
+        #                                      slurm_options = slurm_options,
+        #                                      jobname = rslurm_jobname )
+        #     fY_results  =  get_slurm_out( simulate_fY_job, wait = TRUE )
+        #
+        # } else {
+        parameters  =  as.data.frame( t( parameters ) )
+        fY_results  =  mclapply( parameters, function( param ){
+            find_optimal_fY( param[1], param[2] )
+        } )
+        # }
         score  =  sapply( fY_results, function( fY_result ){
             sum(abs(fY_result$coefficients - thY) / thY_SE)
         } )

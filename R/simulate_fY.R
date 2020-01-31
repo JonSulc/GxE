@@ -1,6 +1,3 @@
-library( RNOmni ) # IRNT
-library( PearsonDS ) # Random number generator for Pearson distribution
-
 source( 'R/IA_fit.R'  )
 
 .create_zs  =  function( ys,
@@ -18,6 +15,11 @@ simulate_fY  =  function( phenotypes,
                           skewness,
                           kurtosis,
                           sim_num = 100 ){
+  if (!requireNamespace( "RNOmni", quietly = TRUE )
+      | !requireNamespace( "PearsonDS", quietly = TRUE )) {
+    stop("Packages 'RNOmni' and 'PearsonDS' are required for the fake phenotype simulation.",
+         call. = FALSE)
+  }
   if (skewness^2 > kurtosis-1) {
     stop( "Invalid combination of skewness and kurtosis" )
   }
@@ -30,7 +32,7 @@ simulate_fY  =  function( phenotypes,
   if (is.null( dim( grs ) )) {
     grs  =  array( grs, dim = c( length( grs ), 1 ) )
   }
-  z    =  matrix( rankNorm( phenotypes[ , 1 ] ), ncol = 1 )
+  z    =  matrix( RNOmni::rankNorm( phenotypes[ , 1 ] ), ncol = 1 )
 
   a1  =  cor( phenotypes, grs )[1]
 
@@ -39,7 +41,7 @@ simulate_fY  =  function( phenotypes,
   y_sorted  =  sort( phenotypes )
 
   a1s  =  matrix( a1 + seq( -0.25, 0.25, by = 0.01 ), nrow = 1 )
-  noi  =  matrix( rpearson( length( phenotypes ),
+  noi  =  matrix( PearsonDS::rpearson( length( phenotypes ),
                             moments = c( 0, 1, skewness, kurtosis ) ),
                   ncol = 1 )
 
@@ -51,7 +53,7 @@ simulate_fY  =  function( phenotypes,
 
   a1_best  =  a1s[ which.min( abs( ts-a1 ) ) ]
 
-  noi  =  matrix( rpearson( length( phenotypes ) * sim_num,
+  noi  =  matrix( PearsonDS::rpearson( length( phenotypes ) * sim_num,
                             moments = c( 0, 1, skewness, kurtosis ) ),
                   ncol = sim_num )
 
