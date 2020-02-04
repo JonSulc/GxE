@@ -8,12 +8,7 @@
 #' @param simulate_phenotype Generate pseudo-phenotype fY
 #' @param skewness_range Possible values of skewness to test for in the simulated phenotype
 #' @param kurtosis_range possible values of kurtosis to test for in the simulated phenotype
-#' @param max_sd Threshold to remove outliers
-#' @param use_rslurm Use the rslurm package for parallelization
-#' @param rslurm_jobname Name of the rslurm job
-#' @param rslurm_suffix Append suffix to rslurm_jobname
-#' @param rslurm_overwrite Remove any rslurm files with the same job name in the directory
-#' @param slurm_options List of parameters to pass to Slurm
+#' @param max_sd Threshold to remove outliers (only used with simulate_phenotype)
 #'
 #' @return \code{estimate_gxe} returns a list containing parameter estimates for
 #'   alpha1, alpha2, beta, and gamma (\code{xopt}), their standard error
@@ -110,11 +105,7 @@ estimate_gxe  =  function( phenotypes,
                            # The rest is only used if simulate_phenotype is TRUE
                            skewness_range = seq( -3, 3, by = 0.2 ),
                            k_range = c( 2:4 ), # kurtosis = skewness^2 + k
-                           max_sd = 7,
-                           use_rslurm = simulate_phenotype
-                             & 'rslurm' %in% rownames(installed.packages()),
-                           rslurm_jobname = 'estimate_gxe',
-                           slurm_options = list() ) {
+                           max_sd = 7 ) {
     if (is.null( dim( phenotypes ) )) {
         phenotypes = as.matrix( phenotypes )
     }
@@ -168,16 +159,6 @@ estimate_gxe  =  function( phenotypes,
                 (apply( fphenotype, 2,function( fy, y_sorted ) sort(fy) - y_sorted, sort(phenotypes) ))^2
             ) )
 
-            # thYs = matrix( 0, nrow = 3, ncol = sim_num )
-
-            # for (simulation_n in 1:sim_num) {
-            #     minimum  =  optim( c( cor_y_grs, 0.1, 0 ),
-            #                        IA_fit,
-            #                        gr = NULL,
-            #                        y = fphenotype[ , simulation_n ],
-            #                        grs = grs )
-            #     thYs[    , simulation_n ]  =  minimum$par
-            # }
             thYs  =  apply( fphenotype, 2, function( y ){
                 optim( c( cor_y_grs, 0.1, 0 ),
                        IA_fit,
@@ -211,32 +192,10 @@ estimate_gxe  =  function( phenotypes,
         thY     =  minimum$par
         thY_SE  =  sqrt( diag( solve( minimum$hessian ) ) )
 
-        # if (use_rslurm) {
-        #     if(!require(rslurm))
-        #         stop( "Requires rslurm package." )
-        #     simulate_fY_job  =  slurm_apply( find_optimal_fY,
-        #                                      params = parameters,
-        #                                      nodes = nrow( parameters ),
-        #                                      cpus_per_node = 1,
-        #                                      add_objects = c( 'y',
-        #                                                       'grs',
-        #                                                       'simulate_fY',
-        #                                                       'cor_y_grs',
-        #                                                       'sim_num',
-        #                                                       'max_sd',
-        #                                                       'IA_fit',
-        #                                                       '.create_zs' ),
-        #                                      libPaths = '/home/josulc/miniconda3/lib/R/library',
-        #                                      slurm_options = slurm_options,
-        #                                      jobname = rslurm_jobname )
-        #     fY_results  =  get_slurm_out( simulate_fY_job, wait = TRUE )
-        #
-        # } else {
         parameters  =  as.data.frame( t( parameters ) )
         fY_results  =  mclapply( parameters, function( param ){
             find_optimal_fY( param[1], param[2] )
         } )
-        # }
         score  =  sapply( fY_results, function( fY_result ){
             sum(abs(fY_result$coefficients - thY) / thY_SE)
         } )

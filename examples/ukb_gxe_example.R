@@ -15,8 +15,6 @@ gxe  =  ukb_estimate_gxe( phenotype_name = '23100-0.0',
                           bgens_path     = 'uk_biobank/imp',
                           snps           = snps,
                           sqc_filename   = 'uk_biobank/geno/ukb_sqc_v2.txt',
-                          fam_filename   = 'uk_biobank/plink/ukb1638_cal_chr1_v2_s488366.fam',
-                          simulate_phenotype = TRUE,
-                          slurm_options  = list( partition = 'sgg' ) )
+                          fam_filename   = 'uk_biobank/plink/ukb1638_cal_chr1_v2_s488366.fam' )
 
 print( gxe )
