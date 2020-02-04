@@ -62,6 +62,7 @@ simulate_fY  =  function( phenotypes,
   mean_ys  =  apply( apply( yS, 2, sort ), 1, mean )
   mean_Ys  =  outer( mean_ys,  1:7, function( phenotypes, power ) phenotypes^power )
   betas  =  lm( y_sorted ~ mean_Ys )$coefficients
+  betas  =  setNames( betas, c( 'Intercept', paste0( 'y', 1:7 ) ) )
 
   return( list( fphenotypes = apply( yS, 2, .create_zs, y_sorted ),
                 alp = a1_best,
