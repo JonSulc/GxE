@@ -9,6 +9,7 @@
 #' @param simulate_phenotype Generate pseudo-phenotype fY (compuatationally intensive,
 #'   default is FALSE)
 #' @param skewness_range Possible values of skewness to test for in the simulated phenotype
+<<<<<<< HEAD
 #'   (default is a range from -3 to 3 with a step of 0.2)
 #' @param k_range possible values for \code{k}, where the kurtosis of the simulated
 #'   phenotype is equal to skewness^2 + k (default is c( 2:4 ))
@@ -25,6 +26,10 @@
 #'
 #'   In addition, \code{t_real_fgrs} contains the t-statistics for the difference between
 #'   the coefficients from the real data and the simulated GRS.
+=======
+#' @param kurtosis_range possible values of kurtosis to test for in the simulated phenotype
+#' @param max_sd Threshold to remove outliers (only used with simulate_phenotype)
+>>>>>>> 3e6bc75888e0d47db42db677fab159944d11a21c
 #'
 #' @importFrom dplyr bind_cols
 #' @importFrom parallel mclapply
