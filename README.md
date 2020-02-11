@@ -38,8 +38,8 @@ contains similar information for the simulated phenotype, without
 simulation. Additionally, this list contains the `skewness` and
 `kurtosis` values which most closely match the data, the root mean
 square difference between the real and fake phenotypes (`rms_diff`), the
-effect of … (`alp`), and the estimates of the genetic effects from
-linear to seventh power (`fY_coefficients`).
+main linear genetic effect (`alp`), and the estimates of the genetic
+effects from linear to seventh power (`fY_coefficients`).
 
 In addition, the `t_real_fgrs` contains the t-statistic for the
 difference between the results from the real and fake GRS.
